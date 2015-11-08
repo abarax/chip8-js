@@ -1,5 +1,5 @@
 {
-  "name": "chip-8.js",
+  "name": "chip-8",
   "version": "0.0.0",
   "description": "Basic chip 8 emulator",
   "main": "index.js",

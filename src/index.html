@@ -21,15 +21,29 @@
   }
   </style>
   <body>
-    <h1>Chip-8</h1>
+    <h1>Chip-8 Emulator</h1>
 
     <div id="info"></div>
 
     <hr>
 
-    <div id="content"></div>
-
-    <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script src="js/my-app.js"></script>
+    <canvas id="screen"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.18/require.min.js"></script>
+    <script src="chip-8.js"></script>
+    <script>
+      requirejs.config({
+        paths: {
+          jquery: '//code.jquery.com/jquery-2.1.4.min'
+        }
+      });
+      require(['chip-8/chip8', 'chip-8/rom', 'jquery'], function(Chip8, Rom, $) {
+        var chip8 = new Chip8();
+        var rom = Rom.loadFromUrl('roms/INVADERS').then(function(rom) {
+          console.log('promise resolved');
+          chip8.load(rom);
+          //chip8.start();
+        });
+      });
+    </script>
   </body>
 </html>

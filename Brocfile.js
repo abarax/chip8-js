@@ -1,27 +1,52 @@
-// Node path module
-var path = require('path');
+const funnel = require('broccoli-funnel');
+const concat = require('broccoli-concat');
+const mergeTrees = require('broccoli-merge-trees');
+const esTranspiler = require('broccoli-babel-transpiler');
+const pkg = require('./package.json');
 
-// Babel transpiler
-var babel = require('broccoli-babel-transpiler');
-// filter trees (subsets of files)
-var funnel = require('broccoli-funnel');
-// concatenate trees
-var concat = require('broccoli-concat');
-// merge trees
-var mergeTrees = require('broccoli-merge-trees');
+const src = 'src';
 
-// Transpile the source files
-var appJs = babel('src', {browserPolyfill: true});
-
-// Concatenate all the JS files into a single file
-appJs = concat(appJs, {
-  inputFiles: ['**/*.js'],
-  outputFile: '/js/my-app.js'
+const indexHtml = funnel(src, {
+  files: ['index.html']
 });
 
-// Grab the index file
-var index = funnel('src', {files: ['index.html']});
+const roms = funnel('src/roms', {
+    destDir: 'roms'
+});
 
-// Grab all our trees and
-// export them as a single and final tree
-module.exports = mergeTrees([index, appJs]);
+const js = esTranspiler(src, {
+  stage: 0,
+  moduleIds: true,
+  modules: 'amd',
+
+
+  // Transforms /index.js files to use their containing directory name
+  getModuleId: function (name) { 
+    name = pkg.name + '/' + name;
+    return name.replace(/\/index$/, '');
+  },
+
+  // Fix relative imports inside /index's
+  resolveModuleSource: function (source, filename) {
+    var match = filename.match(/(.+)\/index\.\S+$/i);
+
+    // is this an import inside an /index file?
+    if (match) {
+      var path = match[1];
+      return source
+        .replace(/^\.\//, path + '/')
+        .replace(/^\.\.\//, '');
+    } else {
+      return source;
+    }
+  }
+});
+
+const main = concat(js, {
+  inputFiles: [
+    '**/*.js'
+  ],
+  outputFile: '/' + pkg.name + '.js'
+});
+
+module.exports = mergeTrees([main, indexHtml, roms]);
