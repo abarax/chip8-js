@@ -40,8 +40,8 @@
         var chip8 = new Chip8();
         var rom = Rom.loadFromUrl('roms/INVADERS').then(function(rom) {
           console.log('promise resolved');
-          chip8.load(rom);
-          //chip8.start();
+          chip8.loadProgram(rom);
+          chip8.start();
         });
       });
     </script>
