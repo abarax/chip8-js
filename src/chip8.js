@@ -8,9 +8,9 @@ export default class Chip8 {
   constructor() {
     this.isRunning = false;
     this.memory = new Memory();
-    this.cpu = new CPU(this.memory);
     this.display = new Display();
     this.input = new Input();
+    this.cpu = new CPU(this.memory, this.input, this.display);
 
     this.fontset = [
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
