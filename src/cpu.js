@@ -60,7 +60,7 @@ export default class CPU {
             // The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
             case 0x3000:
                 if(this.registers[opCode & 0x0F00] == (opCode & 0x00FF)) {
-                    this.pc += 2;
+                    this.pc++;
                 }
                 break;
             // 4xkk - SNE Vx, byte
@@ -68,7 +68,7 @@ export default class CPU {
             // The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
             case 0x4000:
                 if(this.registers[x] != (opCode & 0x00FF)) {
-                    this.pc += 2;
+                    this.pc++;
                 }
                 break;
             // 5xy0 - SE Vx, Vy
@@ -76,7 +76,7 @@ export default class CPU {
             // The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
             case 0x5000:
                 if(this.registers[x] == this.registers[y]) {
-                    this.pc += 2;
+                    this.pc ++;
                 }
                 break;
             // 6xkk - LD Vx, byte
@@ -182,7 +182,7 @@ export default class CPU {
             // The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
             case 0x9000:
                 if (this.registers[x] != this.registers[y]) {
-                    this.pc += 2;
+                    this.pc ++;
                 }
                 break;
             // Annn - LD I, addr
@@ -219,7 +219,7 @@ export default class CPU {
                 this.registers[0xF] = 0;
                 for (let yline = 0; yline < height; yline++)
                 {
-                    pixel = this.memory.read(I + yline);
+                    pixel = this.memory.read(this.I + yline);
                     for(let xline = 0; xline < 8; xline++)
                     {
                         //(0x80 >> xline) will isolate 1 bit in our sprite row and check if it is 1
@@ -244,7 +244,7 @@ export default class CPU {
                     // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
                     case 0x000E:
                         if (this.input.getKey(x)) {
-                            this.pc += 2;
+                            this.pc++;
                         }
                         break;
                     // ExA1 - SKNP Vx
@@ -252,7 +252,7 @@ export default class CPU {
                     // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
                     case 0x0001:
                         if (!this.input.getKey(x)) {
-                            this.pc += 2;
+                            this.pc++;
                         }
                         break;
                 }
