@@ -1,7 +1,9 @@
 export default class CPU {
 
-    constructor(memory) {
+    constructor(memory, input, display) {
         this.memory = memory;
+        this.input = input;
+        this.display = display;
         this.registers = [];
         this.I = 0;
         this.pc = 0x200;
@@ -15,8 +17,11 @@ export default class CPU {
 
         // Fetch Opcode
         let opCode = this.memory.read(this.pc) << 8 | this.memory.read(this.pc + 1);
-        let x = (opcode & 0x0F00) >> 8;
-        let y = (opcode & 0x00F0) >> 4;
+        let x = (opCode & 0x0F00) >> 8;
+        let y = (opCode & 0x00F0) >> 4;
+
+        //Once we have the opCode increment the program counter by two bytes
+        this.pc += 2;
 
 
         switch(opCode & 0xF000) {
@@ -79,44 +84,38 @@ export default class CPU {
             // The interpreter puts the value kk into register Vx.
             case 0x6000:
                 this.registers[x] = (opCode & 0x00FF);
-                this.pc++
                 break;
             // 7xkk - ADD Vx, byte
             // Set Vx = Vx + kk.
             // Adds the value kk to the value of register Vx, then stores the result in Vx. 
             case 0x7000:
                 this.registers[x] += (opCode & 0x00FF);
-                this.pc++
                 break;
             case 0x8000:
-                switch(opcode & 0x000F) {
+                switch(opCode & 0x000F) {
                     // 8xy0 - LD Vx, Vy
                     // Set Vx = Vy.
                     // Stores the value of register Vy in register Vx.
                     case 0x0000:
                         this.registers[x] = this.registers[y];
-                        this.pc++;
                         break;
                     // 8xy1 - OR Vx, Vy
                     // Set Vx = Vx OR Vy.
                     // Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx. A bitwise OR compares the corrseponding bits from two values, and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0. 
                     case 0x0001:
                         this.registers[x] |= this.registers[y];
-                        this.pc++;
                         break;
                     // 8xy2 - AND Vx, Vy
                     // Set Vx = Vx AND Vy.
                     // Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx. A bitwise AND compares the corrseponding bits from two values, and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0. 
                     case 0x0002:
                         this.registers[x] &= this.registers[y];
-                        this.pc++;
                         break;
                     // 8xy3 - XOR Vx, Vy
                     // Set Vx = Vx XOR Vy.
                     // Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx. An exclusive OR compares the corrseponding bits from two values, and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0. 
                     case 0x0003:
                         this.registers[x] ^= this.registers[y];
-                        this.pc++;
                         break;
                     // 8xy4 - ADD Vx, Vy
                     // Set Vx = Vx + Vy, set VF = carry.
@@ -127,7 +126,6 @@ export default class CPU {
                             this.registers[0xF] = 1;
                         } else {
                             this.registers[0xF] = 0;
-                        this.pc++;
                         }
                         break;
                     // 8xy5 - SUB Vx, Vy
@@ -140,7 +138,6 @@ export default class CPU {
                         } else {
                             this.registers[0xF] = 0;
                         }
-                        this.pc++;
                         break;
                     // 8xy6 - SHR Vx {, Vy}
                     // Set Vx = Vx SHR 1.
@@ -153,7 +150,6 @@ export default class CPU {
                         }
                         //divide by 2
                         this.registers[x] >>= 1;
-                        this.pc++;
                         break;
                     // 8xy7 - SUBN Vx, Vy
                     // Set Vx = Vy - Vx, set VF = NOT borrow.
@@ -166,7 +162,6 @@ export default class CPU {
                         }
                         var result = this.registers[y] - this.registers[x];
                         this.registers[x] = result;
-                        this.pc++;
                         break;
                     // 8xyE - SHL Vx {, Vy}
                     // Set Vx = Vx SHL 1.
@@ -179,7 +174,6 @@ export default class CPU {
                         }
                         //multiply by 2
                         this.registers[x] <<= 1;
-                        this.pc++;
                         break;
                 }
                 break;
@@ -187,21 +181,28 @@ export default class CPU {
             // Skip next instruction if Vx != Vy.
             // The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
             case 0x9000:
+                if (this.registers[x] != this.registers[y]) {
+                    this.pc += 2;
+                }
                 break;
             // Annn - LD I, addr
             // Set I = nnn.
             // The value of register I is set to nnn.
             case 0xA000:
+                this.I = opCode & 0x0FFF;
                 break;
             // Bnnn - JP V0, addr
             // Jump to location nnn + V0.
             // The program counter is set to nnn plus the value of V0.
             case 0xB000:
+                this.pc = (opCode & 0x0FFF) + this.registers[0]
                 break;
             // Cxkk - RND Vx, byte
             // Set Vx = random byte AND kk.
-            // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
+            // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. 
+            // The results are stored in Vx. See instruction 8xy2 for more information on AND.
             case 0xC000:
+                this.registers[x] = (opCode & 0x00FF) & (Math.floor(Math.random() * (255 - 0 + 1)) + 0);
                 break;
             // Dxyn - DRW Vx, Vy, nibble
             // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
@@ -211,67 +212,122 @@ export default class CPU {
             // If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. 
             // See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
             case 0xD000:
+                //TODO
+                let height = opCode & 0x000F;
+                let pixel;
+
+                this.registers[0xF] = 0;
+                for (let yline = 0; yline < height; yline++)
+                {
+                    pixel = this.memory.read(I + yline);
+                    for(let xline = 0; xline < 8; xline++)
+                    {
+                        //(0x80 >> xline) will isolate 1 bit in our sprite row and check if it is 1
+                        if((pixel & (0x80 >> xline)) != 0)
+                            {
+                                //Set the flag register if both pixels are 1 i.e. there is a collision
+                                if(this.screenData[(x + xline + ((y + yline) * this.display.width))] == 1) {
+                                    this.registers[0xF] = 1;                                 
+                                }
+                                // Set our pixel in our display
+                                this.screenData[x + xline + ((y + yline) * this.display.width)] ^= 1;
+                            }
+                    }
+                }
+
+                this.display.shouldDraw = true;
                 break;
             case 0xE000:
-                switch (opcode & 0x000F) {
+                switch (opCode & 0x000F) {
                     // Ex9E - SKP Vx
                     // Skip next instruction if key with the value of Vx is pressed.
                     // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
                     case 0x000E:
+                        if (this.input.getKey(x)) {
+                            this.pc += 2;
+                        }
                         break;
                     // ExA1 - SKNP Vx
                     // Skip next instruction if key with the value of Vx is not pressed.
                     // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
                     case 0x0001:
+                        if (!this.input.getKey(x)) {
+                            this.pc += 2;
+                        }
                         break;
                 }
                 break;
             case 0xF000:
-                switch (opcode & 0x00FF) {
+                switch (opCode & 0x00FF) {
                     // Fx07 - LD Vx, DT
                     // Set Vx = delay timer value.
                     // The value of DT is placed into Vx.
                     case 0x0007:
+                        this.registers[x] = this.delay_timer;
                         break;
                     // Fx0A - LD Vx, K
                     // Wait for a key press, store the value of the key in Vx.
                     // All execution stops until a key is pressed, then the value of that key is stored in Vx.
                     case 0x000A:
+                        //TODO
                         break;
                     // Fx15 - LD DT, Vx
                     // Set delay timer = Vx.
                     // DT is set equal to the value of Vx.
                     case 0x0015:
+                        this.delay_timer = this.registers[x];
                         break;
                     // Fx18 - LD ST, Vx
                     // Set sound timer = Vx.
                     // ST is set equal to the value of Vx.
                     case 0x0018:
+                        this.sound_timer = this.registers[x];
                         break;
                     // Fx1E - ADD I, Vx
                     // Set I = I + Vx.
                     // The values of I and Vx are added, and the results are stored in I.
                     case 0x001E:
+                        this.I += this.registers[x];
+                        this.pc++;
                         break;
                     // Fx29 - LD F, Vx
                     // Set I = location of sprite for digit Vx.
                     // The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx. See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
                     case 0x0029:
+                        this.I = this.registers[x] * 5;
                         break;
                     // Fx33 - LD B, Vx
                     // Store BCD representation of Vx in memory locations I, I+1, and I+2.
-                    // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
+                    // The interpreter takes the decimal value of Vx,
+                    // and places the hundreds digit in memory at location in I,
+                    // the tens digit at location I+1, and the ones digit at location I+2.
                     case 0x0033:
+
+                        let number = this.registers[x];
+
+                        //Hundreds digit
+                        this.memory.write(this.I,     parseInt(number/100));
+                        //Tens digit
+                        this.memory.write(this.I + 1, parseInt(number%100/10));
+                        //Ones digit
+                        this.memory.write(this.I + 2, parseInt(number%10));
+
                         break;
                     // Fx55 - LD [I], Vx
                     // Store registers V0 through Vx in memory starting at location I.
                     // The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
                     case 0x0055:
+                        for(let i=0; i< x; i++) {
+                            this.memory.write(this.I + i, this.registers[i]);
+                        }
                         break;
                     // Fx65 - LD Vx, [I]
                     // Read registers V0 through Vx from memory starting at location I.
                     // The interpreter reads values from memory starting at location I into registers V0 through Vx.
                     case 0x0065:
+                        for(let i=0; i< x; i++) {
+                            this.registers[i] = this.memory.read(this.I + i);
+                        }
                         break;
                 }
                 break;
