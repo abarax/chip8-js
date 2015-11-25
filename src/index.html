@@ -15,10 +15,6 @@
       font-family: monospace;
       text-align: center;
   }
-  .color {
-    padding: 1rem;
-    color: #fff;
-  }
   </style>
   <body>
     <h1>Chip-8 Emulator</h1>
@@ -45,11 +41,11 @@
       require(['chip-8/chip8',
               'chip-8/rom',
               'jquery'], function(Chip8, Rom, $) {
-        var canvas = document.querySelector("#screen");
-        var chip8 = new Chip8(canvas);
+        var displayCanvas = document.querySelector("#screen");
+        var chip8 = new Chip8(displayCanvas);
         var rom = Rom.loadFromUrl('roms/INVADERS').then(function(rom) {
-          console.log('promise resolved');
           chip8.loadProgram(rom);
+          console.log('Progam Loaded!');
           chip8.start();
         });
       });
