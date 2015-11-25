@@ -5,10 +5,10 @@ import Input from 'chip-8/input';
 
 export default class Chip8 {
 
-  constructor() {
+  constructor(canvas) {
     this.isRunning = false;
     this.memory = new Memory();
-    this.display = new Display();
+    this.display = new Display(canvas);
     this.input = new Input();
     this.cpu = new CPU(this.memory, this.input, this.display);
 
@@ -39,12 +39,22 @@ export default class Chip8 {
   }
 
   start() {
+      var self = this;
       this.isRunning = true;
-      while(this.isRunning) {
-          this.cpu.step();
-          this.display.update();
-          this.input.update();
-      }
+      requestAnimationFrame(function execute () {
+          if(self.isRunning) {
+              self.cpu.step();
+              self.display.update();
+              self.input.update();
+
+              requestAnimationFrame(execute);
+          }
+
+      });
+  }
+
+  stop() {
+      this.isRunning = false;
   }
 
 }

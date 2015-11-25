@@ -27,7 +27,13 @@
 
     <hr>
 
-    <canvas id="screen"></canvas>
+    <canvas 
+      id="screen" 
+      width="512" 
+      height="256" 
+      style="height:256px; width:512px;">
+    </canvas>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.18/require.min.js"></script>
     <script src="chip-8.js"></script>
     <script>
@@ -36,8 +42,11 @@
           jquery: '//code.jquery.com/jquery-2.1.4.min'
         }
       });
-      require(['chip-8/chip8', 'chip-8/rom', 'jquery'], function(Chip8, Rom, $) {
-        var chip8 = new Chip8();
+      require(['chip-8/chip8',
+              'chip-8/rom',
+              'jquery'], function(Chip8, Rom, $) {
+        var canvas = document.querySelector("#screen");
+        var chip8 = new Chip8(canvas);
         var rom = Rom.loadFromUrl('roms/INVADERS').then(function(rom) {
           console.log('promise resolved');
           chip8.loadProgram(rom);
